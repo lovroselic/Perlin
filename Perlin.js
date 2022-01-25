@@ -12,30 +12,17 @@
  * *************************************************************************
  */
 
-class PlaneLimits {
-    constructor(width = null, leftStop = 0, rightStop = null, open = true) {
-        /**
-         * open: if true you could move out of bounds, if right stop not set
-         * open: if false, bounds not required, steepness will keep hero in the world
-         * left, right stop: cant move object acis over the boundary, assumption: object (hero) has at least one ax
-         */
 
+class PlaneLimits {
+    constructor(width = null, wawelength = 64, drawMaxHeight = null, drawMinHeight = null, open = false, leftStop = 0, rightStop = null) {
+
+        if (width === null || drawMaxHeight === null || drawMinHeight === null) {
+            throw "ConstructionLimits: Required arguments not provided!";
+        }
         this.width = width;
         this.leftStop = leftStop;
         this.rightStop = rightStop || this.width;
         this.open = open;
-    }
-}
-
-class ConstructionLimits {
-    constructor(wawelength = 64, drawMaxHeight = null, drawMinHeight = null) {
-        /**
-         * maxSlope: max slope that can be generated
-         * min, max height: don't generate above, below this limit
-         */
-        if (drawMaxHeight === null || drawMinHeight === null) {
-            throw "ConstructionLimits: Required arguments not provided!";
-        }
         this.WL = wawelength;
         this.drawMaxHeight = Math.floor(drawMaxHeight);
         this.drawMinHeight = Math.floor(drawMinHeight);
@@ -43,6 +30,7 @@ class ConstructionLimits {
         this.amp = this.drawMaxHeight - this.drawMinHeight;
     }
 }
+
 
 /**
  * *************************************************************************
@@ -98,16 +86,20 @@ class PerlinNoise {
 }
 
 var PERLIN = {
-    VERSION: "0.00.01.DEV",
+    VERSION: "0.02.DEV",
     CSS: "color: #2ACBE8",
     INI: {
         ramp: 64
     },
     drawLine(CTX, perlin, mid, color = "#000") {
         /**
-         * debug version
+         * debug paint
          */
+        console.log(color);
         CTX.strokeStyle = color;
+        //CTX.strokeStyle = "#FFF";
+        console.log(CTX);
+        CTX.beginPath();
         CTX.moveTo(0, mid + perlin.pos[0]);
         for (let i = 1; i < perlin.pos.length; i++) {
             CTX.lineTo(i, mid + perlin.pos[i]);
@@ -139,17 +131,23 @@ CTX.fillStyle = "lightblue";
 CTX.fillRect(0, 0, W, H);
 
 ////////////////////////////
-let PL = new PlaneLimits(W);
-//let CL = new ConstructionLimits(64, Math.floor(0.1 * H), Math.floor(0.8 * H));
-//let CL = new ConstructionLimits(96, Math.floor(0.1 * H), Math.floor(0.8 * H));
 
-//fore plane
-let CL = new ConstructionLimits(256, 0.95 * H, 0.5 * H);
-console.log(PL, CL);
+//back2
+let BackPlane2 = new PlaneLimits(W, 36, 0.5 * H, 0.15 * H);
+let Back2PN = new PerlinNoise(BackPlane2.amp, BackPlane2.WL, BackPlane2.width, BackPlane2.open);
 
-//let PN = new PerlinNoise(CL.amp, CL.WL, PL.width);
-let PN = new PerlinNoise(CL.amp, CL.WL, PL.width, true);
-console.log(PN);
-PERLIN.drawLine(CTX, PN, CL.mid);
+
+//back1
+let BackPlane1 = new PlaneLimits(W, 72, 0.7 * H, 0.3 * H);
+let Back1PN = new PerlinNoise(BackPlane1.amp, BackPlane1.WL, BackPlane1.width, BackPlane1.open);
+
+//fore
+let ForePlane = new PlaneLimits(W, 256, 0.95 * H, 0.5 * H, true);
+let ForePerlinNoise = new PerlinNoise(ForePlane.amp, ForePlane.WL, ForePlane.width, ForePlane.open);
+
+PERLIN.drawLine(CTX, Back2PN, BackPlane2.mid, '#888');
+PERLIN.drawLine(CTX, Back1PN, BackPlane1.mid, '#444');
+PERLIN.drawLine(CTX, ForePerlinNoise, ForePlane.mid);
+
 //END
 console.log(`%cPERLIN ${PERLIN.VERSION} loaded.`, PERLIN.CSS);
