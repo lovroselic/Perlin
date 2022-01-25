@@ -14,7 +14,6 @@
 
 class PlaneLimits {
     constructor(width = null, wawelength = 64, drawMaxHeight = null, drawMinHeight = null, open = false, leftStop = 0, rightStop = null) {
-
         if (width === null || drawMaxHeight === null || drawMinHeight === null) {
             throw "ConstructionLimits: Required arguments not provided!";
         }
@@ -49,6 +48,7 @@ class PSNG {
 }
 class PerlinNoise {
     constructor(planeLimits) {
+        this.planeLimits = planeLimits;
         this.amplitude = planeLimits.amp;
         this.wavelength = planeLimits.WL;
         this.width = planeLimits.width;
@@ -72,58 +72,55 @@ class PerlinNoise {
                 }
                 this.pos.push(this.a * this.amplitude);
             } else {
-                this.pos.push(this.interplolate() * this.amplitude);
+                this.pos.push(this.interpolate() * this.amplitude);
             }
             this.x++;
         }
     }
-    interplolate() {
+    interpolate() {
         let ft = Math.PI * ((this.x % this.wavelength) / this.wavelength);
         let f = (1 - Math.cos(ft)) * 0.5;
         return this.a * (1 - f) + this.b * f;
     }
     get() {
-        return Uint16Array.from(this.pos);
+        return Uint16Array.from(this.pos.map(x => x + this.planeLimits.mid));
     }
 }
 
-
 var PERLIN = {
-    VERSION: "0.02.DEV",
+    VERSION: "0.04.DEV",
     CSS: "color: #2ACBE8",
     INI: {
         ramp: 64
     },
-    drawLine(CTX, perlin, mid, color = "#000") {
+    drawLine(CTX, perlin, color = "#000") {
         CTX.strokeStyle = color;
+        let data = perlin.get();
         CTX.beginPath();
-        CTX.moveTo(0, mid + perlin.pos[0]);
-        for (let i = 1; i < perlin.pos.length; i++) {
-            CTX.lineTo(i, mid + perlin.pos[i]);
+        CTX.moveTo(0, data[0]);
+        for (let i = 1; i < data.length; i++) {
+            CTX.lineTo(i, data[i]);
         }
         CTX.stroke();
     },
-    drawShape(CTX, perlin, mid, color) {
+    drawShape(CTX, perlin, color) {
         CTX.fillStyle = color;
         CTX.strokeStyle = color;
-        //let data = perlin.get();
-        let data = perlin.pos;
+        let data = perlin.get();
         CTX.beginPath();
-        CTX.moveTo(0, mid + data[0]);
+        CTX.moveTo(0, data[0]);
         for (let i = 1; i < data.length; i++) {
-            CTX.lineTo(i, mid + data[i]);
+            CTX.lineTo(i, data[i]);
         }
 
-        console.log(CTX.canvas.width-1, CTX.canvas.height-1);
         CTX.lineTo(CTX.canvas.width - 1, CTX.canvas.height - 1);
         CTX.lineTo(0, CTX.canvas.height - 1);
-        CTX.lineTo(0, mid + data[0]);
+        CTX.lineTo(0, data[0]);
 
         CTX.closePath();
         CTX.stroke();
         CTX.fill();
     },
-  
 };
 
 
@@ -162,18 +159,16 @@ let Back1PN = new PerlinNoise(BackPlane1);
 //fore
 let ForePlane = new PlaneLimits(W, 256, 0.95 * H, 0.5 * H, true);
 let ForePerlinNoise = new PerlinNoise(ForePlane);
-console.log(ForePerlinNoise);
-console.log(ForePerlinNoise.get());
+//console.log(ForePerlinNoise);
+//console.log(ForePerlinNoise.get());
 
+PERLIN.drawShape(CTX, Back2PN, '#888');
+PERLIN.drawShape(CTX, Back1PN, '#444');
+PERLIN.drawShape(CTX, ForePerlinNoise, "#0E0");
 
-
-PERLIN.drawShape(CTX, Back2PN, BackPlane2.mid, '#888');
-PERLIN.drawShape(CTX, Back1PN, BackPlane1.mid, '#444');
-PERLIN.drawShape(CTX, ForePerlinNoise, ForePlane.mid, "#0E0");
-
-PERLIN.drawLine(CTX, ForePerlinNoise, ForePlane.mid, "#0E0");
-PERLIN.drawLine(CTX, Back1PN, BackPlane1.mid, '#444');
-PERLIN.drawLine(CTX, Back2PN, BackPlane2.mid, '#888');
+PERLIN.drawLine(CTX, ForePerlinNoise, "#0E0");
+PERLIN.drawLine(CTX, Back1PN, '#444');
+PERLIN.drawLine(CTX, Back2PN, '#888');
 
 
 
